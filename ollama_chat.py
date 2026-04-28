@@ -38,7 +38,7 @@ Available commands:
   /list <n>       Show full details of program #n
   /run <n>        Run saved program #n
   /delete <n>     Delete saved program #n
-  quit or q       Exit the program
+  /quit or /q     Exit the program
 
 Any other input is treated as a code request to the LLM.
 """)
@@ -410,9 +410,7 @@ def main():
     if not model:
         return
 
-    # Print help and config after successful connection
-    print_help()
-    
+    # Print model banner first, then help, then example
     python_path = VENV_PYTHON if VENV_PYTHON.exists() else sys.executable
     print(f"\n{'='*50}")
     print(f"Model: {model}")
@@ -422,8 +420,10 @@ def main():
     print(f"Auto-execution: ENABLED")
     print(f"Database: {DB_PATH}")
     print(f"{'='*50}")
+    
+    print_help()
     print_intro_example()
-    print("\nEnter your code request. Type 'quit' to exit.\n")
+    print("\nEnter your code request. Type '/quit' to exit.\n")
 
     # Initialize conversation with system prompt
     messages = [{"role": "system", "content": SYSTEM_PROMPT}]
@@ -467,7 +467,7 @@ def main():
                     print("Usage: /delete <n>")
                 continue
             
-            if user_input.lower() in ("quit", "exit", "q"):
+            if user_input.lower() in ("/quit", "/q", "quit", "exit", "q"):
                 break
             
             # Process as code request
