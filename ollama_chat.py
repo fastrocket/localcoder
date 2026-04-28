@@ -3,10 +3,12 @@
 
 import requests
 import json
+import os
 import re
+import sqlite3
 import subprocess
 import sys
-import sqlite3
+import tempfile
 from pathlib import Path
 from datetime import datetime
 
@@ -36,7 +38,7 @@ Available commands:
   /help or /?     Show this help message
   /list           List saved programs (truncated view)
   /list <n>       Show full details of program #n
-  /run <n>        Run saved program #n
+  /run <n> [args] Run saved program #n with optional args
   /delete <n>     Delete saved program #n
   /quit or /q     Exit the program
 
@@ -161,8 +163,8 @@ def delete_program(program_id):
     return deleted
 
 
-def run_saved_program(program_id):
-    """Execute a saved program."""
+def run_saved_program(program_id, args=None):
+    """Execute a saved program with optional args."""
     prog = get_program(program_id)
     if not prog:
         print(f"Program #{program_id} not found.")
@@ -171,9 +173,11 @@ def run_saved_program(program_id):
     _, prompt, code, output, created = prog
     print(f"\nRunning Program #{program_id}...")
     print(f"Original prompt: {prompt[:50]}...")
+    if args:
+        print(f"Args: {args}")
     print("-" * 40)
     
-    success, new_output = run_python_code(code)
+    success, new_output = run_python_code(code, args)
     print(new_output)
     print("-" * 40)
     
@@ -190,16 +194,27 @@ def extract_python_code(text):
     return matches[0] if matches else None
 
 
-def run_python_code(code):
-    """Execute Python code and return (success, output)."""
+def run_python_code(code, args=None):
+    """Execute Python code with optional args and return (success, output)."""
     python_path = VENV_PYTHON if VENV_PYTHON.exists() else sys.executable
     try:
-        result = subprocess.run(
-            [str(python_path), "-c", code],
-            capture_output=True,
-            text=True,
-            timeout=30
-        )
+        if args:
+            # Write to temp file to support args
+            with tempfile.NamedTemporaryFile(mode='w', suffix='.py', delete=False) as f:
+                f.write(code)
+                temp_file = f.name
+            try:
+                cmd = [str(python_path), temp_file] + args
+                result = subprocess.run(cmd, capture_output=True, text=True, timeout=30)
+            finally:
+                os.unlink(temp_file)
+        else:
+            result = subprocess.run(
+                [str(python_path), "-c", code],
+                capture_output=True,
+                text=True,
+                timeout=30
+            )
         success = result.returncode == 0
         output = result.stdout if success else f"Error (exit {result.returncode}):\n{result.stderr}"
         return success, output.strip()
@@ -453,10 +468,12 @@ def main():
             
             if user_input.lower().startswith("/run "):
                 try:
-                    prog_id = int(user_input.split()[1])
-                    run_saved_program(prog_id)
+                    parts = user_input.split()
+                    prog_id = int(parts[1])
+                    args = parts[2:] if len(parts) > 2 else None
+                    run_saved_program(prog_id, args)
                 except (ValueError, IndexError):
-                    print("Usage: /run <n>")
+                    print("Usage: /run <n> [args]")
                 continue
             
             if user_input.lower().startswith("/delete "):
