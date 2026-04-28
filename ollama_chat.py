@@ -300,7 +300,11 @@ def process_code_request(model, user_input, messages):
     while True:
         if consecutive_failures >= MAX_RETRIES:
             print(f"\n[Failed {MAX_RETRIES} consecutive attempts]")
-            cont = input("Continue trying? [y/N]: ").strip().lower()
+            try:
+                cont = input("Continue trying? [y/N]: ").strip().lower()
+            except (EOFError, KeyboardInterrupt):
+                print("\nGoodbye!")
+                return messages, final_code, final_output, False
             if cont not in ("y", "yes"):
                 return messages, final_code, final_output, False
             consecutive_failures = 0
@@ -403,6 +407,9 @@ def select_model(models):
             print("Invalid selection.")
         except ValueError:
             print("Please enter a number.")
+        except (EOFError, KeyboardInterrupt):
+            print("\nGoodbye!")
+            return None
 
 
 def main():
@@ -480,15 +487,38 @@ def main():
             
             # After success, prompt to save
             if success and code:
-                save = input("\nSave this program? [y/N]: ").strip().lower()
+                try:
+                    save = input("\nSave this program? [y/N]: ").strip().lower()
+                except (EOFError, KeyboardInterrupt):
+                    print("\nGoodbye!")
+                    break
                 if save in ("y", "yes"):
                     prog_id = save_program(user_input, code, output)
                     print(f"Program saved as #{prog_id}")
 
+        except EOFError:
+            print("\nGoodbye!")
+            break
         except KeyboardInterrupt:
             print("\nGoodbye!")
             break
+        except Exception as e:
+            print(f"\n[Error: {e}]")
+            continue
+
+
+def safe_main():
+    """Wrap main() to handle top-level exceptions gracefully."""
+    try:
+        main()
+    except EOFError:
+        print("\nGoodbye!")
+    except KeyboardInterrupt:
+        print("\nGoodbye!")
+    except Exception as e:
+        print(f"\n[Fatal error: {e}]")
+        sys.exit(1)
 
 
 if __name__ == "__main__":
-    main()
+    safe_main()
