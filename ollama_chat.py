@@ -44,6 +44,29 @@ Any other input is treated as a code request to the LLM.
 """)
 
 
+def print_intro_example():
+    """Print a quick intro with an example request."""
+    print("""
+Example request:
+  > write a python program which takes two optional args n m, with
+    defaults to n = m = 10, and then run it
+
+The LLM will generate code like:
+  ```python
+  import sys
+  def main(n=10, m=10):
+      print(f"n={n}, m={m}")
+  if __name__ == '__main__':
+      n = int(sys.argv[1]) if len(sys.argv) > 1 else 10
+      m = int(sys.argv[2]) if len(sys.argv) > 2 else 10
+      main(n, m)
+  ```
+
+The code executes automatically. If it fails, the error is sent back
+for the LLM to fix (up to 5 retries). After success, you can save it.
+""")
+
+
 def init_database():
     """Initialize SQLite database for storing programs."""
     conn = sqlite3.connect(DB_PATH)
@@ -404,6 +427,7 @@ def main():
     print(f"Auto-execution: ENABLED")
     print(f"Database: {DB_PATH}")
     print(f"{'='*50}")
+    print_intro_example()
     print("\nEnter your code request. Type 'quit' to exit.\n")
 
     # Initialize conversation with system prompt
