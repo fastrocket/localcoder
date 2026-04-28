@@ -47,23 +47,12 @@ Any other input is treated as a code request to the LLM.
 def print_intro_example():
     """Print a quick intro with an example request."""
     print("""
-Example request:
-  > write a python program which takes two optional args n m, with
-    defaults to n = m = 10, and then run it
+Example:
+  > write a python program to generate a maze with n=10 as the default
+    size if not specified, then run it with n=9
 
-The LLM will generate code like:
-  ```python
-  import sys
-  def main(n=10, m=10):
-      print(f"n={n}, m={m}")
-  if __name__ == '__main__':
-      n = int(sys.argv[1]) if len(sys.argv) > 1 else 10
-      m = int(sys.argv[2]) if len(sys.argv) > 2 else 10
-      main(n, m)
-  ```
-
-The code executes automatically. If it fails, the error is sent back
-for the LLM to fix (up to 5 retries). After success, you can save it.
+The LLM will generate and execute the program. If it fails, errors are
+sent back for fixing (up to 5 retries). After success, you can save it.
 """)
 
 
@@ -416,15 +405,14 @@ def main():
     # Initialize database
     init_database()
     
-    # Print help at startup
-    print_help()
-    
     models = list_models()
     model = select_model(models)
     if not model:
         return
 
-    # Print config info
+    # Print help and config after successful connection
+    print_help()
+    
     python_path = VENV_PYTHON if VENV_PYTHON.exists() else sys.executable
     print(f"\n{'='*50}")
     print(f"Model: {model}")
